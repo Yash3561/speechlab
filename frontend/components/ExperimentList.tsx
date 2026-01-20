@@ -1,10 +1,11 @@
 'use client'
 
 import { useState } from 'react'
-import { Play, Pause, Square, MoreVertical, Clock, CheckCircle, XCircle, Loader2, Trash2, Copy, FileText, TrendingUp } from 'lucide-react'
+import { Play, Pause, Square, MoreVertical, Clock, CheckCircle, XCircle, Loader2, Trash2, Copy, FileText, TrendingUp, Bug } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { type Experiment, api } from '@/lib/api'
 import { RegressionAlert } from './RegressionAlert'
+import { ErrorAnalysisModal } from './ErrorAnalysisModal'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog'
 
 interface ExperimentListProps {
@@ -68,12 +69,14 @@ function ExperimentRow({
     onStop,
     onDelete,
     onCheckRegression,
+    onIdentifyErrors,
 }: {
     experiment: Experiment
     onStart: (id: string) => void
     onStop: (id: string) => void
     onDelete: (id: string) => void
     onCheckRegression: (id: string) => void
+    onIdentifyErrors: (id: string) => void
 }) {
     const [menuOpen, setMenuOpen] = useState(false)
     const config = statusConfig[experiment.status] || statusConfig.pending
@@ -212,16 +215,28 @@ function ExperimentRow({
                                         Delete
                                     </button>
                                     {experiment.status === 'completed' && (
-                                        <button
-                                            onClick={() => {
-                                                setMenuOpen(false)
-                                                onCheckRegression(experiment.id)
-                                            }}
-                                            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-blue-400 hover:bg-blue-500/10 transition-colors"
-                                        >
-                                            <TrendingUp className="w-4 h-4" />
-                                            Regression Check
-                                        </button>
+                                        <>
+                                            <button
+                                                onClick={() => {
+                                                    setMenuOpen(false)
+                                                    onCheckRegression(experiment.id)
+                                                }}
+                                                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-blue-400 hover:bg-blue-500/10 transition-colors"
+                                            >
+                                                <TrendingUp className="w-4 h-4" />
+                                                Regression Check
+                                            </button>
+                                            <button
+                                                onClick={() => {
+                                                    setMenuOpen(false)
+                                                    onIdentifyErrors(experiment.id)
+                                                }}
+                                                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-orange-400 hover:bg-orange-500/10 transition-colors"
+                                            >
+                                                <Bug className="w-4 h-4" />
+                                                Error Analysis
+                                            </button>
+                                        </>
                                     )}
                                 </div>
                             </>
@@ -229,7 +244,7 @@ function ExperimentRow({
                     </div>
                 </div>
             </td>
-        </tr>
+        </tr >
     )
 }
 
@@ -244,6 +259,18 @@ export function ExperimentList({
     const [selectedReport, setSelectedReport] = useState<any>(null)
     const [loadingReport, setLoadingReport] = useState(false)
     const [showReport, setShowReport] = useState(false)
+
+    // Error Analysis State
+    const [showErrorInfo, setShowErrorInfo] = useState(false)
+    const [analyzingExp, setAnalyzingExp] = useState<Experiment | null>(null)
+
+    const handleIdentifyErrors = (id: string) => {
+        const exp = experiments.find(e => e.id === id)
+        if (exp) {
+            setAnalyzingExp(exp)
+            setShowErrorInfo(true)
+        }
+    }
 
     const handleCheckRegression = async (id: string) => {
         setLoadingReport(true)
@@ -292,6 +319,13 @@ export function ExperimentList({
                 </DialogContent>
             </Dialog>
 
+            <ErrorAnalysisModal
+                isOpen={showErrorInfo}
+                onClose={() => setShowErrorInfo(false)}
+                samples={analyzingExp?.worst_samples}
+                experimentName={analyzingExp?.name || ''}
+            />
+
             <div className="glass rounded-xl overflow-hidden">
                 <div className="p-6 border-b border-background-tertiary">
                     <div className="flex items-center justify-between">
@@ -339,6 +373,7 @@ export function ExperimentList({
 
                                         onDelete={onDelete}
                                         onCheckRegression={handleCheckRegression}
+                                        onIdentifyErrors={handleIdentifyErrors}
                                     />
                                 ))
                             )}

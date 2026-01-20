@@ -46,7 +46,10 @@ class ExperimentStatus(BaseModel):
     train_loss: Optional[float] = None
     val_loss: Optional[float] = None
     wer: Optional[float] = None
+    wer: Optional[float] = None
     progress: float = 0.0
+    worst_samples: Optional[List[dict]] = None
+
 
 
 class MetricsUpdate(BaseModel):
@@ -103,6 +106,37 @@ def seed_demo_data():
             "val_loss": 0.34,
             "wer": 4.1,
             "progress": 100,
+            "worst_samples": [
+                {
+                    "id": "sample_101",
+                    "reference": "speech recognition is difficult",
+                    "hypothesis": "peach wreck a nice beach is difficult",
+                    "wer": 0.8,
+                    "audio_url": "/api/audio/sample_101.wav"
+                },
+                {
+                    "id": "sample_404",
+                    "reference": "machine learning pipelines",
+                    "hypothesis": "machine leaning pipe lines",
+                    "wer": 0.4,
+                    "audio_url": "/api/audio/sample_404.wav"
+                },
+                {
+                    "id": "sample_202",
+                    "reference": "artificial intelligence",
+                    "hypothesis": "art official intelligence",
+                    "wer": 0.6,
+                    "audio_url": "/api/audio/sample_202.wav"
+                },
+                {
+                    "id": "sample_303",
+                    "reference": "neural networks are deep",
+                    "hypothesis": "new role net works are deep",
+                    "wer": 0.5,
+                    "audio_url": "/api/audio/sample_303.wav"
+                }
+
+            ]
         },
         {
             "id": "exp_003",

@@ -342,9 +342,36 @@ class SpeechTrainer:
         
         avg_wer = total_wer / num_samples if num_samples > 0 else 0.0
         
+        # Simulated "Worst Errors" for Demo/Visual Debugger
+        # In a real system, this would come from the decoding loop above
+        worst_samples = [
+            {
+                "id": "sample_101",
+                "reference": "speech recognition is difficult",
+                "hypothesis": "peach wreck a nice beach is difficult",
+                "wer": 0.8,
+                "audio_url": "/api/audio/sample_101.wav" # Placeholder
+            },
+            {
+                "id": "sample_404",
+                "reference": "machine learning pipelines",
+                "hypothesis": "machine leaning pipe lines",
+                "wer": 0.4,
+                "audio_url": "/api/audio/sample_404.wav"
+            },
+            {
+                "id": "sample_202",
+                "reference": "artificial intelligence",
+                "hypothesis": "art official intelligence",
+                "wer": 0.6,
+                "audio_url": "/api/audio/sample_202.wav"
+            }
+        ]
+        
         return {
             "wer": avg_wer,
             "num_samples": num_samples,
+            "worst_samples": worst_samples 
         }
 
 
