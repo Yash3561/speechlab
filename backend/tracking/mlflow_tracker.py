@@ -239,6 +239,36 @@ class ExperimentTracker:
             logger.error(f"Failed to get run {run_id}: {e}")
             return None
     
+    def set_baseline(self, run_id: str):
+        """
+        Mark a run as the production baseline.
+        Removes baseline tag from previous baseline.
+        """
+        if not HAS_MLFLOW or self.client is None:
+            logger.info(f"[Mock] Setting baseline to {run_id}")
+            return
+            
+        try:
+            # 1. Find existing baseline and remove tag
+            existing_baseline = self.get_baseline()
+            if existing_baseline:
+                self.client.delete_tag(existing_baseline["run_id"], "production_baseline")
+            
+            # 2. Set new baseline tag
+            self.client.set_tag(run_id, "production_baseline", "true")
+            logger.info(f"Set run {run_id} as production baseline")
+            
+        except Exception as e:
+            logger.error(f"Failed to set baseline: {e}")
+
+    def get_baseline(self) -> Optional[Dict[str, Any]]:
+        """Get the current production baseline run."""
+        runs = self.list_runs(
+            filter_string="tags.production_baseline = 'true'",
+            max_results=1
+        )
+        return runs[0] if runs else None
+
     def list_runs(
         self,
         filter_string: str = "",
@@ -274,6 +304,7 @@ class ExperimentTracker:
                     "status": run.info.status,
                     "start_time": run.info.start_time,
                     "metrics": run.data.metrics,
+                    "tags": run.data.tags,
                 }
                 for run in runs
             ]

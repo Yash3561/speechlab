@@ -1,9 +1,11 @@
 'use client'
 
 import { useState } from 'react'
-import { Play, Pause, Square, MoreVertical, Clock, CheckCircle, XCircle, Loader2, Trash2, Copy, FileText } from 'lucide-react'
+import { Play, Pause, Square, MoreVertical, Clock, CheckCircle, XCircle, Loader2, Trash2, Copy, FileText, TrendingUp } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { type Experiment } from '@/lib/api'
+import { type Experiment, api } from '@/lib/api'
+import { RegressionAlert } from './RegressionAlert'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog'
 
 interface ExperimentListProps {
     experiments: Experiment[]
@@ -65,11 +67,13 @@ function ExperimentRow({
     onStart,
     onStop,
     onDelete,
+    onCheckRegression,
 }: {
     experiment: Experiment
     onStart: (id: string) => void
     onStop: (id: string) => void
     onDelete: (id: string) => void
+    onCheckRegression: (id: string) => void
 }) {
     const [menuOpen, setMenuOpen] = useState(false)
     const config = statusConfig[experiment.status] || statusConfig.pending
@@ -207,6 +211,18 @@ function ExperimentRow({
                                         <Trash2 className="w-4 h-4" />
                                         Delete
                                     </button>
+                                    {experiment.status === 'completed' && (
+                                        <button
+                                            onClick={() => {
+                                                setMenuOpen(false)
+                                                onCheckRegression(experiment.id)
+                                            }}
+                                            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-blue-400 hover:bg-blue-500/10 transition-colors"
+                                        >
+                                            <TrendingUp className="w-4 h-4" />
+                                            Regression Check
+                                        </button>
+                                    )}
                                 </div>
                             </>
                         )}
@@ -225,58 +241,111 @@ export function ExperimentList({
     onDelete,
     onNewExperiment,
 }: ExperimentListProps) {
+    const [selectedReport, setSelectedReport] = useState<any>(null)
+    const [loadingReport, setLoadingReport] = useState(false)
+    const [showReport, setShowReport] = useState(false)
+
+    const handleCheckRegression = async (id: string) => {
+        setLoadingReport(true)
+        setShowReport(true)
+        setSelectedReport(null)
+        try {
+            const report = await api.checkRegression(id)
+            setSelectedReport(report)
+        } catch (error) {
+            console.error('Failed to check regression:', error)
+        } finally {
+            setLoadingReport(false)
+        }
+    }
+
+    const handlePromote = async () => {
+        if (!selectedReport) return
+        try {
+            await api.setBaseline(selectedReport.candidate_id)
+            setShowReport(false)
+            // Ideally trigger a refresh here
+        } catch (error) {
+            console.error('Failed to promote baseline:', error)
+        }
+    }
+
     return (
-        <div className="glass rounded-xl overflow-hidden">
-            <div className="p-6 border-b border-background-tertiary">
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <h2 className="text-lg font-semibold">Experiments</h2>
-                        {loading && (
-                            <Loader2 className="w-4 h-4 text-foreground-muted animate-spin" />
+        <>
+            <Dialog open={showReport} onOpenChange={setShowReport}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Regression Analysis</DialogTitle>
+                    </DialogHeader>
+                    <div className="py-4">
+                        <RegressionAlert
+                            report={selectedReport}
+                            loading={loadingReport}
+                            onPromote={handlePromote}
+                        />
+                        {!loadingReport && !selectedReport && (
+                            <div className="text-center text-muted-foreground">
+                                Could not analyze regression (missing metrics or baseline).
+                            </div>
                         )}
                     </div>
-                    <button
-                        onClick={onNewExperiment}
-                        className="px-4 py-2 bg-accent hover:bg-accent-hover text-white rounded-lg text-sm font-medium transition-colors"
-                    >
-                        New Experiment
-                    </button>
+                </DialogContent>
+            </Dialog>
+
+            <div className="glass rounded-xl overflow-hidden">
+                <div className="p-6 border-b border-background-tertiary">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <h2 className="text-lg font-semibold">Experiments</h2>
+                            {loading && (
+                                <Loader2 className="w-4 h-4 text-foreground-muted animate-spin" />
+                            )}
+                        </div>
+                        <button
+                            onClick={onNewExperiment}
+                            className="px-4 py-2 bg-accent hover:bg-accent-hover text-white rounded-lg text-sm font-medium transition-colors"
+                        >
+                            New Experiment
+                        </button>
+                    </div>
+                </div>
+                <div className="overflow-x-auto">
+                    <table className="w-full">
+                        <thead>
+                            <tr className="border-b border-background-tertiary text-left text-sm text-foreground-muted">
+                                <th className="py-3 px-4 font-medium">Experiment</th>
+                                <th className="py-3 px-4 font-medium">Status</th>
+                                <th className="py-3 px-4 font-medium">Progress</th>
+                                <th className="py-3 px-4 font-medium">WER</th>
+                                <th className="py-3 px-4 font-medium">Started</th>
+                                <th className="py-3 px-4 font-medium">Epochs</th>
+                                <th className="py-3 px-4 font-medium">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {experiments.length === 0 ? (
+                                <tr>
+                                    <td colSpan={7} className="py-12 text-center text-foreground-muted">
+                                        {loading ? 'Loading experiments...' : 'No experiments yet. Create one to get started!'}
+                                    </td>
+                                </tr>
+                            ) : (
+                                experiments.map((experiment) => (
+                                    <ExperimentRow
+                                        key={experiment.id}
+                                        experiment={experiment}
+                                        onStart={onStart}
+                                        onStop={onStop}
+
+                                        onDelete={onDelete}
+                                        onCheckRegression={handleCheckRegression}
+                                    />
+                                ))
+                            )}
+                        </tbody>
+                    </table>
                 </div>
             </div>
-            <div className="overflow-x-auto">
-                <table className="w-full">
-                    <thead>
-                        <tr className="border-b border-background-tertiary text-left text-sm text-foreground-muted">
-                            <th className="py-3 px-4 font-medium">Experiment</th>
-                            <th className="py-3 px-4 font-medium">Status</th>
-                            <th className="py-3 px-4 font-medium">Progress</th>
-                            <th className="py-3 px-4 font-medium">WER</th>
-                            <th className="py-3 px-4 font-medium">Started</th>
-                            <th className="py-3 px-4 font-medium">Epochs</th>
-                            <th className="py-3 px-4 font-medium">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {experiments.length === 0 ? (
-                            <tr>
-                                <td colSpan={7} className="py-12 text-center text-foreground-muted">
-                                    {loading ? 'Loading experiments...' : 'No experiments yet. Create one to get started!'}
-                                </td>
-                            </tr>
-                        ) : (
-                            experiments.map((experiment) => (
-                                <ExperimentRow
-                                    key={experiment.id}
-                                    experiment={experiment}
-                                    onStart={onStart}
-                                    onStop={onStop}
-                                    onDelete={onDelete}
-                                />
-                            ))
-                        )}
-                    </tbody>
-                </table>
-            </div>
-        </div>
+        </>
     )
 }
