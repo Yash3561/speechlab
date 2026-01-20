@@ -24,7 +24,7 @@ def generate_run_id(prefix: str = "run") -> str:
         prefix: Prefix for the run ID
         
     Returns:
-        Unique run ID like 'run_20240119_143052_abc123'
+        Unique run ID like 'run_20260119_143052_abc123'
     """
     timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
     hash_suffix = hashlib.md5(str(time.time()).encode()).hexdigest()[:6]

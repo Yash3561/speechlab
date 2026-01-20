@@ -12,7 +12,7 @@
 
 *A distributed ML pipeline for training and evaluating speech recognition models — built with Ray, PyTorch, and MLOps best practices.*
 
-[**Live Demo**](#demo) · [**Documentation**](#documentation) · [**Quick Start**](#-quick-start)
+[**Documentation**](#documentation) · [**Quick Start**](#-quick-start)
 
 </div>
 
@@ -125,8 +125,8 @@ python scripts/reproduce.py --run-id a1b2c3d4
 **Validation:** Reproduced runs achieve WER within ±0.1% (statistical noise only).
 
 **Example:**
-- Original run (2025-01-10): WER = 4.23%
-- Reproduced run (2026-01-20): WER = 4.21%
+- Original run (2026-01-10): WER = 4.23%
+- Reproduced run (2026-02-20): WER = 4.21%
 - Delta: 0.02% (within confidence interval)
 
 ---
@@ -137,6 +137,7 @@ python scripts/reproduce.py --run-id a1b2c3d4
 - **WER (Word Error Rate):** Primary metric with bootstrap confidence intervals (95% CI)
 - **CER (Character Error Rate):** Fine-grained analysis for morphologically rich languages
 - **RTF (Real-Time Factor):** Latency benchmark (production requires RTF < 0.3)
+- **Latency-Constrained WER:** Evaluates accuracy only on samples meeting 200ms latency budget (On-Device/Siri simulation)
 - **Error Breakdown:** Substitutions, deletions, insertions tracked separately
 
 **Test Set Stratification:**
