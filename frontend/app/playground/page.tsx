@@ -76,7 +76,7 @@ export default function PlaygroundPage() {
     return (
         <div className="min-h-screen p-6">
             <header className="mb-8 flex items-center gap-4">
-                <Link href="/" className="p-2 rounded-lg bg-background-secondary hover:bg-background-tertiary transition-colors">
+                <Link href="/dashboard" className="p-2 rounded-lg bg-background-secondary hover:bg-background-tertiary transition-colors">
                     <ArrowLeft className="w-5 h-5" />
                 </Link>
                 <div>
