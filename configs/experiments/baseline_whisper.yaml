@@ -1,0 +1,60 @@
+# Baseline Whisper experiment for LibriSpeech
+
+experiment:
+  name: "whisper_base_librispeech"
+  description: "Baseline training with Whisper Base on LibriSpeech"
+  tags: ["baseline", "whisper", "librispeech"]
+
+model:
+  architecture: "whisper"
+  variant: "base"
+  pretrained: true
+
+data:
+  train_manifest: "data/librispeech/train-clean-100.json"
+  val_manifest: "data/librispeech/dev-clean.json"
+  test_manifest: "data/librispeech/test-clean.json"
+  sample_rate: 16000
+  max_duration: 30.0
+  min_duration: 1.0
+  
+  augmentation:
+    spec_augment: true
+    freq_mask_param: 27
+    time_mask_param: 100
+    speed_perturb: true
+    noise_injection: true
+    snr_db_range: [10, 30]
+
+training:
+  max_epochs: 20
+  batch_size: 16
+  learning_rate: 0.00005
+  weight_decay: 0.01
+  optimizer: "adamw"
+  scheduler: "cosine"
+  warmup_steps: 500
+  gradient_clip_norm: 1.0
+  gradient_accumulation_steps: 2
+  mixed_precision: true
+  
+  save_every_n_steps: 1000
+  eval_every_n_steps: 500
+  log_every_n_steps: 50
+
+evaluation:
+  metrics: ["wer", "cer", "rtf"]
+  test_sets:
+    - name: "test-clean"
+      manifest: "data/librispeech/test-clean.json"
+    - name: "test-other"
+      manifest: "data/librispeech/test-other.json"
+  
+  # Regression threshold
+  regression_threshold: 0.02  # 2% WER increase triggers alert
+
+mlflow:
+  experiment_name: "speechlab-baseline"
+  log_artifacts: true
+  log_models: true
+  register_model: true

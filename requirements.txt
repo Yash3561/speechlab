@@ -1,0 +1,47 @@
+# Core dependencies
+ray[train,data,tune]==2.9.3
+torch>=2.1.0
+torchaudio>=2.1.0
+torchmetrics>=1.0.0
+
+# API
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+websockets>=12.0
+python-multipart>=0.0.6
+
+# MLflow
+mlflow>=2.10.0
+psycopg2-binary>=2.9.9
+
+# Audio processing
+librosa>=0.10.1
+soundfile>=0.12.1
+audioread>=3.0.1
+
+# Speech metrics
+jiwer>=3.0.3
+
+# Data processing
+pandas>=2.2.0
+numpy>=1.26.0
+pyyaml>=6.0.1
+
+# Configuration
+pydantic>=2.6.0
+pydantic-settings>=2.1.0
+python-dotenv>=1.0.1
+
+# Storage
+boto3>=1.34.0
+redis>=5.0.1
+
+# Utilities
+tqdm>=4.66.0
+rich>=13.7.0
+typer>=0.9.0
+
+# Testing
+pytest>=8.0.0
+pytest-asyncio>=0.23.0
+httpx>=0.26.0

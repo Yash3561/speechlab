@@ -1,0 +1,60 @@
+# Demo experiment config for Whisper Tiny
+# Optimized for GTX 1650 (4GB VRAM)
+
+experiment:
+  name: "whisper_tiny_demo"
+  description: "Demo training run with Whisper Tiny"
+  tags: ["demo", "whisper", "tiny"]
+
+model:
+  architecture: "whisper"
+  variant: "tiny"
+  pretrained: true
+
+data:
+  train_manifest: "data/train.json"
+  val_manifest: "data/val.json"
+  test_manifest: "data/test.json"
+  sample_rate: 16000
+  max_duration: 30.0
+  min_duration: 0.5
+  
+  augmentation:
+    spec_augment: true
+    freq_mask_param: 27
+    time_mask_param: 100
+    num_freq_masks: 2
+    num_time_masks: 2
+    speed_perturb: true
+    speed_rates: [0.9, 1.0, 1.1]
+    noise_injection: false
+
+training:
+  max_epochs: 5
+  batch_size: 8
+  learning_rate: 0.0001
+  weight_decay: 0.01
+  optimizer: "adamw"
+  scheduler: "cosine"
+  warmup_steps: 100
+  gradient_clip_norm: 1.0
+  gradient_accumulation_steps: 4
+  mixed_precision: true
+  
+  # Checkpointing
+  save_every_n_steps: 500
+  eval_every_n_steps: 250
+  log_every_n_steps: 10
+
+evaluation:
+  metrics: ["wer", "cer", "rtf"]
+  test_sets:
+    - name: "test-clean"
+      manifest: "data/test_clean.json"
+    - name: "test-noisy"
+      manifest: "data/test_noisy.json"
+
+mlflow:
+  experiment_name: "speechlab-demo"
+  log_artifacts: true
+  log_models: true

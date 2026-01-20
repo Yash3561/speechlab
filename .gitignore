@@ -1,0 +1,143 @@
+# ========================================
+# SpeechLab .gitignore
+# ========================================
+
+# -----------------------------------------
+# Python
+# -----------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+.conda/
+
+# -----------------------------------------
+# Node.js / Next.js
+# -----------------------------------------
+node_modules/
+.next/
+out/
+.turbo/
+*.tsbuildinfo
+next-env.d.ts
+
+# -----------------------------------------
+# IDE & Editors
+# -----------------------------------------
+.idea/
+.vscode/
+*.swp
+*.swo
+*.sublime-workspace
+*.sublime-project
+.project
+.classpath
+.settings/
+
+# -----------------------------------------
+# Environment & Secrets
+# -----------------------------------------
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+secrets/
+credentials/
+
+# -----------------------------------------
+# ML & Data
+# -----------------------------------------
+# Model checkpoints
+*.pt
+*.pth
+*.ckpt
+*.bin
+*.safetensors
+*.h5
+checkpoints/
+
+# Data files
+data/
+datasets/
+*.wav
+*.flac
+*.mp3
+*.ogg l
+manifests/
+
+# MLflow
+mlruns/
+mlartifacts/
+
+# Ray
+ray_results/
+
+# -----------------------------------------
+# Logs & Outputs
+# -----------------------------------------
+*.log
+logs/
+*.out
+*.err
+artifacts/
+outputs/
+results/
+
+# -----------------------------------------
+# Testing
+# -----------------------------------------
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# -----------------------------------------
+# OS Files
+# -----------------------------------------
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# -----------------------------------------
+# Docker
+# -----------------------------------------
+*.log
+docker-compose.override.yml
+
+# -----------------------------------------
+# Misc
+# -----------------------------------------
+*.bak
+*.tmp
+*.temp
+.cache/
+*.pid
