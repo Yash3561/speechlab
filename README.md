@@ -411,6 +411,17 @@ training:
 
 ---
 
+## 🔮 Roadmap (Future Work)
+
+While currently optimized for Speech, this infrastructure is designed to scale to other domains:
+
+- [ ] **Multi-Modal Support:** Adapter support for LLM Fine-tuning (Llama 3 / Mistral) via Ray Train.
+- [ ] **Kubernetes Deployment:** Helm charts for deploying the Ray Cluster on EKS/GKE.
+- [ ] **Model Serving Mesh:** Canary deployments and A/B testing via Istio integration.
+- [ ] **Vector Database:** Integration with Pinecone/Milvus for RAG-based error analysis.
+
+---
+
 ## 🤝 Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
