@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from backend.core.config import settings
 from backend.core.logging import logger
-from backend.api.endpoints import experiments, health, models, evaluation, training
+from backend.api.endpoints import experiments, health, models, evaluation, training, mlflow as mlflow_api
 
 
 @asynccontextmanager
@@ -57,6 +57,7 @@ app.include_router(experiments.router, prefix="/api/experiments", tags=["Experim
 app.include_router(models.router, prefix="/api/models", tags=["Models"])
 app.include_router(evaluation.router, prefix="/api/evaluation", tags=["Evaluation"])
 app.include_router(training.router, prefix="/api/training", tags=["Training"])
+app.include_router(mlflow_api.router, prefix="/api/mlflow", tags=["MLflow"])
 
 
 @app.get("/")
