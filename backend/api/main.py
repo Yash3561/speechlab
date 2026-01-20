@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from backend.core.config import settings
 from backend.core.logging import logger
-from backend.api.endpoints import experiments, health, models, evaluation, training, mlflow as mlflow_api
+from backend.api.endpoints import experiments, health, models, evaluation, training, mlflow as mlflow_api, auth
 
 
 @asynccontextmanager
@@ -37,7 +37,7 @@ async def lifespan(app: FastAPI):
 # Create FastAPI app
 app = FastAPI(
     title="SpeechLab API",
-    description="Production-Grade Speech Model Training Infrastructure",
+    description="Speech Model Training Infrastructure",
     version="0.1.0",
     lifespan=lifespan,
 )
@@ -53,6 +53,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(health.router, tags=["Health"])
+app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(experiments.router, prefix="/api/experiments", tags=["Experiments"])
 app.include_router(models.router, prefix="/api/models", tags=["Models"])
 app.include_router(evaluation.router, prefix="/api/evaluation", tags=["Evaluation"])

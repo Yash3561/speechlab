@@ -1,10 +1,8 @@
+'use client'
+
 import type { Metadata } from 'next'
 import './globals.css'
-
-export const metadata: Metadata = {
-    title: 'SpeechLab | Production-Grade Speech ML Pipeline',
-    description: 'Distributed training and evaluation infrastructure for speech models',
-}
+import { AuthProvider } from '@/lib/auth'
 
 export default function RootLayout({
     children,
@@ -14,7 +12,9 @@ export default function RootLayout({
     return (
         <html lang="en" className="dark">
             <body className="min-h-screen bg-background text-foreground antialiased">
-                {children}
+                <AuthProvider>
+                    {children}
+                </AuthProvider>
             </body>
         </html>
     )

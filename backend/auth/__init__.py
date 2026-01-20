@@ -1,0 +1,36 @@
+"""SpeechLab Authentication Module."""
+from backend.auth.authentication import (
+    User,
+    UserCreate,
+    UserLogin,
+    UserRole,
+    Token,
+    TokenPayload,
+    create_tokens,
+    decode_token,
+    authenticate_user,
+    create_user,
+    get_user_by_id,
+    list_users,
+    can_manage_users,
+    can_create_experiments,
+    can_delete_experiments,
+)
+
+__all__ = [
+    "User",
+    "UserCreate", 
+    "UserLogin",
+    "UserRole",
+    "Token",
+    "TokenPayload",
+    "create_tokens",
+    "decode_token",
+    "authenticate_user",
+    "create_user",
+    "get_user_by_id",
+    "list_users",
+    "can_manage_users",
+    "can_create_experiments",
+    "can_delete_experiments",
+]
