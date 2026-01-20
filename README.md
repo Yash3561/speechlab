@@ -2,7 +2,7 @@
 
 # 🎙️ SpeechLab
 
-### Production-Grade Speech Model Training Infrastructure
+### Speech Model Training Infrastructure
 
 [![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://python.org)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.1+-ee4c2c.svg)](https://pytorch.org)
@@ -10,7 +10,7 @@
 [![Next.js](https://img.shields.io/badge/Next.js-14-black.svg)](https://nextjs.org)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-*A distributed, scalable ML pipeline for training and evaluating speech recognition models — built with Ray, PyTorch, and modern MLOps practices.*
+*A distributed ML pipeline for training and evaluating speech recognition models — built with Ray, PyTorch, and MLOps best practices.*
 
 [**Live Demo**](#demo) · [**Documentation**](#documentation) · [**Quick Start**](#-quick-start)
 
@@ -20,7 +20,7 @@
 
 ## 🎯 What is SpeechLab?
 
-SpeechLab is a **complete training and evaluation infrastructure** for speech models, designed to bridge the gap between research and production. It provides:
+SpeechLab is a **full-stack training and evaluation infrastructure** for speech models. It provides:
 
 - 🚀 **Distributed Training** — Multi-GPU/multi-node training with Ray Train
 - 📊 **Experiment Tracking** — Full reproducibility with MLflow
@@ -196,7 +196,7 @@ training:
 
 ## 🎓 Why This Architecture?
 
-This project demonstrates **production-level ML engineering**:
+This project demonstrates **solid ML engineering patterns**:
 
 1. **Separation of Concerns** — Data, training, evaluation are independent modules
 2. **Scalability** — Ray enables distributed computing across GPUs/nodes

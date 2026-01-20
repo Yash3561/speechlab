@@ -76,7 +76,7 @@ export default function Dashboard() {
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-3xl font-bold gradient-text">SpeechLab</h1>
-                        <p className="text-foreground-muted mt-1">Production-Grade Speech ML Pipeline</p>
+                        <p className="text-foreground-muted mt-1">Speech Model Training Infrastructure</p>
                     </div>
                     <div className="flex items-center gap-4">
                         <button
