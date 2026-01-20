@@ -28,21 +28,24 @@ export default function Dashboard() {
     const { connected } = useHealth()
 
     // Compute dashboard metrics from experiments
-    const metrics = useMemo(() => {
+    const { metrics, runningExperimentId } = useMemo(() => {
         const activeExperiments = experiments.filter(e => e.status === 'running').length
         const completedExperiments = experiments.filter(e => e.status === 'completed')
         const bestWER = completedExperiments.length > 0
             ? Math.min(...completedExperiments.map(e => e.wer || Infinity))
             : null
 
-        // Find running experiment with best metrics
+        // Find first running experiment for the chart
         const runningExp = experiments.find(e => e.status === 'running')
 
         return {
-            activeExperiments,
-            gpuUtilization: runningExp ? 70 + Math.random() * 20 : 0, // Simulated
-            samplesPerSec: runningExp ? 1100 + Math.random() * 300 : 0, // Simulated
-            bestWER: bestWER !== Infinity && bestWER !== null ? bestWER : 4.2,
+            metrics: {
+                activeExperiments,
+                gpuUtilization: runningExp ? 70 + Math.random() * 20 : 0,
+                samplesPerSec: runningExp ? 1100 + Math.random() * 300 : 0,
+                bestWER: bestWER !== Infinity && bestWER !== null ? bestWER : 4.2,
+            },
+            runningExperimentId: runningExp?.id || null,
         }
     }, [experiments])
 
@@ -162,7 +165,7 @@ export default function Dashboard() {
                                 </div>
                             </div>
                         </div>
-                        <TrainingChart />
+                        <TrainingChart experimentId={runningExperimentId} />
                     </div>
                 </div>
 

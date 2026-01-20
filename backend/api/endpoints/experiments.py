@@ -73,13 +73,17 @@ active_connections: List[WebSocket] = []
 # Seed with demo data on startup
 def seed_demo_data():
     """Seed demo experiments for UI testing."""
+    from datetime import timedelta
+    
+    now = datetime.utcnow()
+    
     demo_experiments = [
         {
             "id": "exp_001",
             "name": "whisper_tiny_librispeech",
             "status": "running",
-            "created_at": "2024-01-19T18:00:00Z",
-            "updated_at": "2024-01-19T20:15:00Z",
+            "created_at": (now - timedelta(hours=2)).isoformat() + "Z",
+            "updated_at": (now - timedelta(minutes=15)).isoformat() + "Z",
             "current_epoch": 3,
             "total_epochs": 5,
             "train_loss": 0.55,
@@ -91,8 +95,8 @@ def seed_demo_data():
             "id": "exp_002",
             "name": "whisper_base_noisy",
             "status": "completed",
-            "created_at": "2024-01-18T10:00:00Z",
-            "updated_at": "2024-01-18T18:32:00Z",
+            "created_at": (now - timedelta(days=1, hours=8)).isoformat() + "Z",
+            "updated_at": (now - timedelta(hours=8)).isoformat() + "Z",
             "current_epoch": 10,
             "total_epochs": 10,
             "train_loss": 0.21,
@@ -104,8 +108,8 @@ def seed_demo_data():
             "id": "exp_003",
             "name": "wav2vec2_baseline",
             "status": "failed",
-            "created_at": "2024-01-16T14:00:00Z",
-            "updated_at": "2024-01-16T14:45:00Z",
+            "created_at": (now - timedelta(days=3)).isoformat() + "Z",
+            "updated_at": (now - timedelta(days=3, hours=-1)).isoformat() + "Z",
             "current_epoch": 2,
             "total_epochs": 10,
             "train_loss": 1.85,
@@ -117,8 +121,8 @@ def seed_demo_data():
             "id": "exp_004",
             "name": "whisper_tiny_augmented",
             "status": "pending",
-            "created_at": "2024-01-19T20:10:00Z",
-            "updated_at": "2024-01-19T20:10:00Z",
+            "created_at": (now - timedelta(minutes=10)).isoformat() + "Z",
+            "updated_at": (now - timedelta(minutes=10)).isoformat() + "Z",
             "current_epoch": 0,
             "total_epochs": 5,
             "train_loss": None,
@@ -224,39 +228,125 @@ async def delete_experiment(experiment_id: str):
 # WebSocket for Real-Time Metrics
 # ============================================================
 
+# Track connections per experiment
+experiment_connections: dict[str, List[WebSocket]] = {}
+
+
 @router.websocket("/ws/{experiment_id}")
 async def websocket_metrics(websocket: WebSocket, experiment_id: str):
     """
     WebSocket endpoint for real-time training metrics.
     
-    Clients connect here to receive live updates during training.
+    Sends simulated metrics every second for running experiments.
+    In production, this would receive actual metrics from Ray Train.
     """
     await websocket.accept()
-    active_connections.append(websocket)
+    
+    # Track this connection
+    if experiment_id not in experiment_connections:
+        experiment_connections[experiment_id] = []
+    experiment_connections[experiment_id].append(websocket)
+    
     logger.info(f"WebSocket connected for experiment: {experiment_id}")
     
     try:
+        # Simulation state
+        step = 0
+        train_loss = 2.5
+        val_loss = 2.8
+        
         while True:
-            # In production, this would receive actual metrics from Ray
-            # For now, we just keep the connection alive
-            data = await websocket.receive_text()
+            # Check if experiment is running
+            exp = experiments_db.get(experiment_id)
+            if not exp or exp.get("status") != "running":
+                # Not running - just wait for status change
+                await asyncio.sleep(1)
+                # Send status update
+                await websocket.send_json({
+                    "type": "status",
+                    "status": exp.get("status") if exp else "deleted",
+                    "experiment_id": experiment_id
+                })
+                continue
             
-            # Echo back for testing
-            await websocket.send_text(f"Received: {data}")
+            # Simulate training progress
+            step += 10
+            train_loss = max(0.05, train_loss - 0.02 + (asyncio.get_event_loop().time() % 0.01 - 0.005))
+            val_loss = max(0.1, val_loss - 0.015 + (asyncio.get_event_loop().time() % 0.02 - 0.01))
+            
+            # Update experiment progress
+            total_steps = exp.get("total_epochs", 5) * 1000
+            progress = min(100, int((step / total_steps) * 100))
+            current_epoch = min(exp.get("total_epochs", 5), step // 1000 + 1)
+            
+            experiments_db[experiment_id].update({
+                "current_epoch": current_epoch,
+                "progress": progress,
+                "train_loss": round(train_loss, 4),
+                "val_loss": round(val_loss, 4),
+                "updated_at": datetime.utcnow().isoformat(),
+            })
+            
+            # Calculate simulated WER (improves as loss decreases)
+            wer = max(3.0, 15.0 - (10.0 * (1 - train_loss / 2.5)))
+            experiments_db[experiment_id]["wer"] = round(wer, 1)
+            
+            # Send metrics to client
+            metrics = {
+                "type": "metrics",
+                "experiment_id": experiment_id,
+                "data": {
+                    "epoch": current_epoch,
+                    "step": step,
+                    "train_loss": round(train_loss, 4),
+                    "val_loss": round(val_loss, 4),
+                    "wer": round(wer, 1),
+                    "learning_rate": 0.0001 * (0.95 ** current_epoch),
+                    "gpu_util": 70 + (step % 30),
+                    "throughput": 1000 + (step % 500),
+                    "progress": progress,
+                    "timestamp": datetime.utcnow().isoformat(),
+                }
+            }
+            
+            await websocket.send_json(metrics)
+            
+            # Check if completed
+            if progress >= 100:
+                experiments_db[experiment_id]["status"] = "completed"
+                experiments_db[experiment_id]["progress"] = 100
+                await websocket.send_json({
+                    "type": "completed",
+                    "experiment_id": experiment_id,
+                    "final_wer": experiments_db[experiment_id]["wer"]
+                })
+                logger.info(f"Experiment {experiment_id} completed!")
+            
+            # Wait before next update
+            await asyncio.sleep(1)
             
     except WebSocketDisconnect:
-        active_connections.remove(websocket)
+        if experiment_id in experiment_connections:
+            experiment_connections[experiment_id].remove(websocket)
         logger.info(f"WebSocket disconnected for experiment: {experiment_id}")
+    except Exception as e:
+        logger.error(f"WebSocket error: {e}")
+        if experiment_id in experiment_connections and websocket in experiment_connections[experiment_id]:
+            experiment_connections[experiment_id].remove(websocket)
 
 
 async def broadcast_metrics(experiment_id: str, metrics: MetricsUpdate):
-    """Broadcast metrics to all connected WebSocket clients."""
+    """Broadcast metrics to all connected WebSocket clients for an experiment."""
+    if experiment_id not in experiment_connections:
+        return
+        
     message = json.dumps({
+        "type": "metrics",
         "experiment_id": experiment_id,
-        "metrics": metrics.model_dump()
+        "data": metrics.model_dump()
     })
     
-    for connection in active_connections:
+    for connection in experiment_connections[experiment_id]:
         try:
             await connection.send_text(message)
         except Exception:
