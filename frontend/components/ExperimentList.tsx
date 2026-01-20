@@ -1,59 +1,18 @@
 'use client'
 
-import { Play, Pause, MoreVertical, Clock, CheckCircle, XCircle, Loader2 } from 'lucide-react'
+import { useState } from 'react'
+import { Play, Pause, Square, MoreVertical, Clock, CheckCircle, XCircle, Loader2, Trash2, Copy, FileText } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { type Experiment } from '@/lib/api'
 
-interface Experiment {
-    id: string
-    name: string
-    status: 'running' | 'completed' | 'failed' | 'pending'
-    model: string
-    progress: number
-    wer?: number
-    startedAt: string
-    duration: string
+interface ExperimentListProps {
+    experiments: Experiment[]
+    loading: boolean
+    onStart: (id: string) => void
+    onStop: (id: string) => void
+    onDelete: (id: string) => void
+    onNewExperiment: () => void
 }
-
-const demoExperiments: Experiment[] = [
-    {
-        id: 'exp_001',
-        name: 'whisper_tiny_librispeech',
-        status: 'running',
-        model: 'Whisper Tiny',
-        progress: 67,
-        wer: 5.2,
-        startedAt: '2 hours ago',
-        duration: '2h 15m',
-    },
-    {
-        id: 'exp_002',
-        name: 'whisper_base_noisy',
-        status: 'completed',
-        model: 'Whisper Base',
-        progress: 100,
-        wer: 4.1,
-        startedAt: 'Yesterday',
-        duration: '8h 32m',
-    },
-    {
-        id: 'exp_003',
-        name: 'wav2vec2_baseline',
-        status: 'failed',
-        model: 'Wav2Vec2 Base',
-        progress: 34,
-        startedAt: '3 days ago',
-        duration: '45m',
-    },
-    {
-        id: 'exp_004',
-        name: 'whisper_tiny_augmented',
-        status: 'pending',
-        model: 'Whisper Tiny',
-        progress: 0,
-        startedAt: 'Queued',
-        duration: '-',
-    },
-]
 
 const statusConfig = {
     running: {
@@ -80,11 +39,48 @@ const statusConfig = {
         bg: 'bg-yellow-400/10',
         label: 'Pending',
     },
+    stopped: {
+        icon: Square,
+        color: 'text-gray-400',
+        bg: 'bg-gray-400/10',
+        label: 'Stopped',
+    },
 }
 
-function ExperimentRow({ experiment }: { experiment: Experiment }) {
-    const config = statusConfig[experiment.status]
+function formatDate(dateString: string): string {
+    const date = new Date(dateString)
+    const now = new Date()
+    const diff = now.getTime() - date.getTime()
+
+    const hours = Math.floor(diff / (1000 * 60 * 60))
+    const days = Math.floor(hours / 24)
+
+    if (days > 0) return `${days} day${days > 1 ? 's' : ''} ago`
+    if (hours > 0) return `${hours} hour${hours > 1 ? 's' : ''} ago`
+    return 'Just now'
+}
+
+function ExperimentRow({
+    experiment,
+    onStart,
+    onStop,
+    onDelete,
+}: {
+    experiment: Experiment
+    onStart: (id: string) => void
+    onStop: (id: string) => void
+    onDelete: (id: string) => void
+}) {
+    const [menuOpen, setMenuOpen] = useState(false)
+    const config = statusConfig[experiment.status] || statusConfig.pending
     const StatusIcon = config.icon
+
+    // Model name from experiment name
+    const modelName = experiment.name.includes('whisper')
+        ? `Whisper ${experiment.name.includes('tiny') ? 'Tiny' : experiment.name.includes('base') ? 'Base' : 'Model'}`
+        : experiment.name.includes('wav2vec')
+            ? 'Wav2Vec2 Base'
+            : 'Unknown Model'
 
     return (
         <tr className="border-b border-background-tertiary hover:bg-background-secondary/50 transition-colors">
@@ -101,7 +97,7 @@ function ExperimentRow({ experiment }: { experiment: Experiment }) {
                     </div>
                     <div>
                         <p className="font-medium">{experiment.name}</p>
-                        <p className="text-sm text-foreground-muted">{experiment.model}</p>
+                        <p className="text-sm text-foreground-muted">{modelName}</p>
                     </div>
                 </div>
             </td>
@@ -126,7 +122,8 @@ function ExperimentRow({ experiment }: { experiment: Experiment }) {
                         <div
                             className={cn(
                                 'h-full rounded-full transition-all duration-500',
-                                experiment.status === 'failed' ? 'bg-red-500' : 'bg-blue-500'
+                                experiment.status === 'failed' ? 'bg-red-500' :
+                                    experiment.status === 'completed' ? 'bg-green-500' : 'bg-blue-500'
                             )}
                             style={{ width: `${experiment.progress}%` }}
                         />
@@ -140,35 +137,108 @@ function ExperimentRow({ experiment }: { experiment: Experiment }) {
                     <span className="text-foreground-muted">-</span>
                 )}
             </td>
-            <td className="py-4 px-4 text-foreground-muted">{experiment.startedAt}</td>
-            <td className="py-4 px-4 text-foreground-muted font-mono">{experiment.duration}</td>
+            <td className="py-4 px-4 text-foreground-muted">{formatDate(experiment.created_at)}</td>
+            <td className="py-4 px-4 text-foreground-muted font-mono">
+                {experiment.current_epoch}/{experiment.total_epochs}
+            </td>
             <td className="py-4 px-4">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 relative">
                     {experiment.status === 'running' ? (
-                        <button className="p-1.5 rounded-lg hover:bg-background-tertiary transition-colors">
-                            <Pause className="w-4 h-4 text-foreground-muted" />
+                        <button
+                            onClick={() => onStop(experiment.id)}
+                            className="p-1.5 rounded-lg hover:bg-red-500/20 hover:text-red-400 transition-colors"
+                            title="Stop"
+                        >
+                            <Square className="w-4 h-4 text-foreground-muted hover:text-red-400" />
                         </button>
-                    ) : experiment.status === 'pending' ? (
-                        <button className="p-1.5 rounded-lg hover:bg-background-tertiary transition-colors">
-                            <Play className="w-4 h-4 text-foreground-muted" />
+                    ) : (experiment.status === 'pending' || experiment.status === 'stopped') ? (
+                        <button
+                            onClick={() => onStart(experiment.id)}
+                            className="p-1.5 rounded-lg hover:bg-green-500/20 hover:text-green-400 transition-colors"
+                            title="Start"
+                        >
+                            <Play className="w-4 h-4 text-foreground-muted hover:text-green-400" />
                         </button>
                     ) : null}
-                    <button className="p-1.5 rounded-lg hover:bg-background-tertiary transition-colors">
-                        <MoreVertical className="w-4 h-4 text-foreground-muted" />
-                    </button>
+
+                    <div className="relative">
+                        <button
+                            onClick={() => setMenuOpen(!menuOpen)}
+                            className="p-1.5 rounded-lg hover:bg-background-tertiary transition-colors"
+                        >
+                            <MoreVertical className="w-4 h-4 text-foreground-muted" />
+                        </button>
+
+                        {menuOpen && (
+                            <>
+                                <div
+                                    className="fixed inset-0 z-10"
+                                    onClick={() => setMenuOpen(false)}
+                                />
+                                <div className="absolute right-0 bottom-full mb-2 z-20 w-40 glass rounded-lg py-1 shadow-xl border border-background-tertiary">
+                                    <button
+                                        onClick={() => {
+                                            setMenuOpen(false)
+                                            // TODO: View details
+                                        }}
+                                        className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-background-tertiary transition-colors"
+                                    >
+                                        <FileText className="w-4 h-4" />
+                                        View Details
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            setMenuOpen(false)
+                                            // TODO: Clone experiment
+                                        }}
+                                        className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-background-tertiary transition-colors"
+                                    >
+                                        <Copy className="w-4 h-4" />
+                                        Clone
+                                    </button>
+                                    <hr className="my-1 border-background-tertiary" />
+                                    <button
+                                        onClick={() => {
+                                            setMenuOpen(false)
+                                            onDelete(experiment.id)
+                                        }}
+                                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-red-500/10 transition-colors"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                        Delete
+                                    </button>
+                                </div>
+                            </>
+                        )}
+                    </div>
                 </div>
             </td>
         </tr>
     )
 }
 
-export function ExperimentList() {
+export function ExperimentList({
+    experiments,
+    loading,
+    onStart,
+    onStop,
+    onDelete,
+    onNewExperiment,
+}: ExperimentListProps) {
     return (
         <div className="glass rounded-xl overflow-hidden">
             <div className="p-6 border-b border-background-tertiary">
                 <div className="flex items-center justify-between">
-                    <h2 className="text-lg font-semibold">Experiments</h2>
-                    <button className="px-4 py-2 bg-accent hover:bg-accent-hover text-white rounded-lg text-sm font-medium transition-colors">
+                    <div className="flex items-center gap-3">
+                        <h2 className="text-lg font-semibold">Experiments</h2>
+                        {loading && (
+                            <Loader2 className="w-4 h-4 text-foreground-muted animate-spin" />
+                        )}
+                    </div>
+                    <button
+                        onClick={onNewExperiment}
+                        className="px-4 py-2 bg-accent hover:bg-accent-hover text-white rounded-lg text-sm font-medium transition-colors"
+                    >
                         New Experiment
                     </button>
                 </div>
@@ -182,14 +252,28 @@ export function ExperimentList() {
                             <th className="py-3 px-4 font-medium">Progress</th>
                             <th className="py-3 px-4 font-medium">WER</th>
                             <th className="py-3 px-4 font-medium">Started</th>
-                            <th className="py-3 px-4 font-medium">Duration</th>
+                            <th className="py-3 px-4 font-medium">Epochs</th>
                             <th className="py-3 px-4 font-medium">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {demoExperiments.map((experiment) => (
-                            <ExperimentRow key={experiment.id} experiment={experiment} />
-                        ))}
+                        {experiments.length === 0 ? (
+                            <tr>
+                                <td colSpan={7} className="py-12 text-center text-foreground-muted">
+                                    {loading ? 'Loading experiments...' : 'No experiments yet. Create one to get started!'}
+                                </td>
+                            </tr>
+                        ) : (
+                            experiments.map((experiment) => (
+                                <ExperimentRow
+                                    key={experiment.id}
+                                    experiment={experiment}
+                                    onStart={onStart}
+                                    onStop={onStop}
+                                    onDelete={onDelete}
+                                />
+                            ))
+                        )}
                     </tbody>
                 </table>
             </div>

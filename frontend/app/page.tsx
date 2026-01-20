@@ -1,32 +1,70 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Activity, Cpu, Database, Zap, Play, BarChart3, Layers, Settings } from 'lucide-react'
+import { useState, useEffect, useMemo } from 'react'
+import { Activity, Cpu, Zap, Play, BarChart3, Settings, RefreshCw } from 'lucide-react'
 import { MetricCard } from '@/components/MetricCard'
 import { TrainingChart } from '@/components/TrainingChart'
 import { ExperimentList } from '@/components/ExperimentList'
 import { SystemStatus } from '@/components/SystemStatus'
+import { NewExperimentModal } from '@/components/NewExperimentModal'
+import { SettingsModal } from '@/components/SettingsModal'
+import { useExperiments, useHealth } from '@/lib/hooks'
 
 export default function Dashboard() {
-    const [metrics, setMetrics] = useState({
-        activeExperiments: 2,
-        gpuUtilization: 87,
-        samplesPerSec: 1250,
-        avgWER: 4.2,
-    })
+    const [showNewExperiment, setShowNewExperiment] = useState(false)
+    const [showSettings, setShowSettings] = useState(false)
 
-    // Simulate live updates
+    const {
+        experiments,
+        loading,
+        error,
+        refresh,
+        startExperiment,
+        stopExperiment,
+        deleteExperiment,
+        createExperiment
+    } = useExperiments()
+
+    const { connected } = useHealth()
+
+    // Compute dashboard metrics from experiments
+    const metrics = useMemo(() => {
+        const activeExperiments = experiments.filter(e => e.status === 'running').length
+        const completedExperiments = experiments.filter(e => e.status === 'completed')
+        const bestWER = completedExperiments.length > 0
+            ? Math.min(...completedExperiments.map(e => e.wer || Infinity))
+            : null
+
+        // Find running experiment with best metrics
+        const runningExp = experiments.find(e => e.status === 'running')
+
+        return {
+            activeExperiments,
+            gpuUtilization: runningExp ? 70 + Math.random() * 20 : 0, // Simulated
+            samplesPerSec: runningExp ? 1100 + Math.random() * 300 : 0, // Simulated
+            bestWER: bestWER !== Infinity && bestWER !== null ? bestWER : 4.2,
+        }
+    }, [experiments])
+
+    // Simulate live GPU updates for running experiments
+    const [gpuUtil, setGpuUtil] = useState(0)
+    const [throughput, setThroughput] = useState(0)
+
     useEffect(() => {
+        const hasRunning = experiments.some(e => e.status === 'running')
+        if (!hasRunning) {
+            setGpuUtil(0)
+            setThroughput(0)
+            return
+        }
+
         const interval = setInterval(() => {
-            setMetrics(prev => ({
-                ...prev,
-                gpuUtilization: Math.min(100, Math.max(60, prev.gpuUtilization + (Math.random() - 0.5) * 10)),
-                samplesPerSec: Math.max(800, prev.samplesPerSec + (Math.random() - 0.5) * 100),
-            }))
+            setGpuUtil(70 + Math.random() * 25)
+            setThroughput(1100 + Math.random() * 400)
         }, 2000)
 
         return () => clearInterval(interval)
-    }, [])
+    }, [experiments])
 
     return (
         <div className="min-h-screen p-6">
@@ -38,19 +76,40 @@ export default function Dashboard() {
                         <p className="text-foreground-muted mt-1">Production-Grade Speech ML Pipeline</p>
                     </div>
                     <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-2 text-success">
-                            <span className="relative flex h-3 w-3">
-                                <span className="pulse-ring absolute inline-flex h-full w-full rounded-full bg-success opacity-75"></span>
-                                <span className="relative inline-flex h-3 w-3 rounded-full bg-success"></span>
+                        <button
+                            onClick={refresh}
+                            className="p-2 rounded-lg bg-background-secondary hover:bg-background-tertiary transition-colors"
+                            title="Refresh"
+                        >
+                            <RefreshCw className={`w-5 h-5 text-foreground-muted ${loading ? 'animate-spin' : ''}`} />
+                        </button>
+                        <div className="flex items-center gap-2">
+                            <span className={`relative flex h-3 w-3`}>
+                                {connected && (
+                                    <span className="pulse-ring absolute inline-flex h-full w-full rounded-full bg-success opacity-75"></span>
+                                )}
+                                <span className={`relative inline-flex h-3 w-3 rounded-full ${connected ? 'bg-success' : 'bg-red-500'}`}></span>
                             </span>
-                            <span className="text-sm font-medium">System Online</span>
+                            <span className={`text-sm font-medium ${connected ? 'text-success' : 'text-red-500'}`}>
+                                {connected ? 'System Online' : 'Disconnected'}
+                            </span>
                         </div>
-                        <button className="p-2 rounded-lg bg-background-secondary hover:bg-background-tertiary transition-colors">
+                        <button
+                            onClick={() => setShowSettings(true)}
+                            className="p-2 rounded-lg bg-background-secondary hover:bg-background-tertiary transition-colors"
+                        >
                             <Settings className="w-5 h-5 text-foreground-muted" />
                         </button>
                     </div>
                 </div>
             </header>
+
+            {/* Error Banner */}
+            {error && (
+                <div className="mb-6 p-4 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400">
+                    <p className="text-sm">{error}</p>
+                </div>
+            )}
 
             {/* Metrics Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -58,27 +117,27 @@ export default function Dashboard() {
                     title="Active Experiments"
                     value={metrics.activeExperiments}
                     icon={<Play className="w-5 h-5" />}
-                    trend="+1 from yesterday"
+                    trend={`${experiments.length} total`}
                     color="blue"
                 />
                 <MetricCard
                     title="GPU Utilization"
-                    value={`${metrics.gpuUtilization.toFixed(0)}%`}
+                    value={gpuUtil > 0 ? `${gpuUtil.toFixed(0)}%` : '0%'}
                     icon={<Cpu className="w-5 h-5" />}
                     trend="GTX 1650"
                     color="green"
                 />
                 <MetricCard
                     title="Throughput"
-                    value={`${metrics.samplesPerSec.toFixed(0)}`}
+                    value={throughput > 0 ? `${throughput.toFixed(0)}` : '0'}
                     suffix="samples/sec"
                     icon={<Zap className="w-5 h-5" />}
-                    trend="+12% from baseline"
+                    trend={metrics.activeExperiments > 0 ? 'Training active' : 'Idle'}
                     color="yellow"
                 />
                 <MetricCard
                     title="Best WER"
-                    value={`${metrics.avgWER}%`}
+                    value={`${metrics.bestWER}%`}
                     icon={<BarChart3 className="w-5 h-5" />}
                     trend="Whisper Tiny"
                     color="purple"
@@ -114,9 +173,28 @@ export default function Dashboard() {
 
                 {/* Experiments List - Full width */}
                 <div className="lg:col-span-3">
-                    <ExperimentList />
+                    <ExperimentList
+                        experiments={experiments}
+                        loading={loading}
+                        onStart={startExperiment}
+                        onStop={stopExperiment}
+                        onDelete={deleteExperiment}
+                        onNewExperiment={() => setShowNewExperiment(true)}
+                    />
                 </div>
             </div>
+
+            {/* Modals */}
+            <NewExperimentModal
+                isOpen={showNewExperiment}
+                onClose={() => setShowNewExperiment(false)}
+                onCreate={createExperiment}
+            />
+
+            <SettingsModal
+                isOpen={showSettings}
+                onClose={() => setShowSettings(false)}
+            />
         </div>
     )
 }

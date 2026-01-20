@@ -70,6 +70,71 @@ experiments_db: dict = {}
 active_connections: List[WebSocket] = []
 
 
+# Seed with demo data on startup
+def seed_demo_data():
+    """Seed demo experiments for UI testing."""
+    demo_experiments = [
+        {
+            "id": "exp_001",
+            "name": "whisper_tiny_librispeech",
+            "status": "running",
+            "created_at": "2024-01-19T18:00:00Z",
+            "updated_at": "2024-01-19T20:15:00Z",
+            "current_epoch": 3,
+            "total_epochs": 5,
+            "train_loss": 0.55,
+            "val_loss": 0.72,
+            "wer": 5.2,
+            "progress": 67,
+        },
+        {
+            "id": "exp_002",
+            "name": "whisper_base_noisy",
+            "status": "completed",
+            "created_at": "2024-01-18T10:00:00Z",
+            "updated_at": "2024-01-18T18:32:00Z",
+            "current_epoch": 10,
+            "total_epochs": 10,
+            "train_loss": 0.21,
+            "val_loss": 0.34,
+            "wer": 4.1,
+            "progress": 100,
+        },
+        {
+            "id": "exp_003",
+            "name": "wav2vec2_baseline",
+            "status": "failed",
+            "created_at": "2024-01-16T14:00:00Z",
+            "updated_at": "2024-01-16T14:45:00Z",
+            "current_epoch": 2,
+            "total_epochs": 10,
+            "train_loss": 1.85,
+            "val_loss": None,
+            "wer": None,
+            "progress": 34,
+        },
+        {
+            "id": "exp_004",
+            "name": "whisper_tiny_augmented",
+            "status": "pending",
+            "created_at": "2024-01-19T20:10:00Z",
+            "updated_at": "2024-01-19T20:10:00Z",
+            "current_epoch": 0,
+            "total_epochs": 5,
+            "train_loss": None,
+            "val_loss": None,
+            "wer": None,
+            "progress": 0,
+        },
+    ]
+    for exp in demo_experiments:
+        experiments_db[exp["id"]] = exp
+
+
+# Initialize demo data
+seed_demo_data()
+
+
 # ============================================================
 # REST Endpoints
 # ============================================================
