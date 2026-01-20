@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
-import { Activity, Cpu, Zap, Play, BarChart3, Settings, RefreshCw } from 'lucide-react'
+import { Activity, Cpu, Zap, Play, BarChart3, Settings, RefreshCw, Gamepad2 } from 'lucide-react'
+import Link from 'next/link'
 import { MetricCard } from '@/components/MetricCard'
 import { TrainingChart } from '@/components/TrainingChart'
 import { ExperimentList } from '@/components/ExperimentList'
@@ -79,6 +80,13 @@ export default function Dashboard() {
                         <p className="text-foreground-muted mt-1">Speech Model Training Infrastructure</p>
                     </div>
                     <div className="flex items-center gap-4">
+                        <Link
+                            href="/playground"
+                            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors font-medium text-sm"
+                        >
+                            <Gamepad2 className="w-4 h-4" />
+                            Playground
+                        </Link>
                         <button
                             onClick={refresh}
                             className="p-2 rounded-lg bg-background-secondary hover:bg-background-tertiary transition-colors"
