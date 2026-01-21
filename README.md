@@ -12,7 +12,7 @@
 
 *A distributed ML pipeline for training and evaluating speech recognition models — built with Ray, PyTorch, and MLOps best practices.*
 
-[**Demo**]([(https://vimeo.com/1156797116)) · [**Quick Start**](#-quick-start)
+[**Demo**]([(https://vimeo.com/1156797116)]) · [**Quick Start**](#-quick-start)
 
 </div>
 
